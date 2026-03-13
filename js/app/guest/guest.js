@@ -255,10 +255,10 @@ export const guest = (() => {
         const url = new URL('https://calendar.google.com/calendar/render');
         const data = new URLSearchParams({
             action: 'TEMPLATE',
-            text: 'The Wedding of Wahyu and Riski',
-            dates: `${formatDate('2023-03-15 10:00')}/${formatDate('2023-03-15 11:00')}`,
-            details: 'Tanpa mengurangi rasa hormat, kami mengundang Anda untuk berkenan menghadiri acara pernikahan kami. Terima kasih atas perhatian dan doa restu Anda, yang menjadi kebahagiaan serta kehormatan besar bagi kami.',
-            location: 'RT 10 RW 02, Desa Pajerukan, Kec. Kalibagor, Kab. Banyumas, Jawa Tengah 53191.',
+            text: 'The Wedding of Minh Hiếu and Phương Thảo',
+            dates: `${formatDate('2026-03-29 11:00')}/${formatDate('2026-03-29 14:00')}`,
+            details: 'Với tất cả sự kính trọng, chúng tôi trân trọng mời quý vị đến tham dự lễ cưới của chúng tôi. Xin chân thành cảm ơn sự quan tâm và lời chúc phúc của quý vị, đó là niềm vui và vinh dự lớn lao đối với chúng tôi.',
+            location: 'Sảnh 1 trung tâm tiệc cưới Xanh Palace Hào Nam, số 135 Hào Nam, Ô Chợ Dừa, Đống Đa, Hà Nội.',
             ctz: config.get('tz'),
         });
 
