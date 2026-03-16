@@ -143,12 +143,23 @@ export const cacheWrapper = (cacheName) => {
 export const request = (method, path) => {
 
     const ac = new AbortController();
+    const dataUrl = document.body?.getAttribute('data-url') || '';
+    const isGoogleScript = path.includes('script.google.com') || dataUrl.includes('script.google.com');
+
     const req = {
         signal: ac.signal,
-        credential: 'include',
-        headers: new Headers(defaultJSON),
         method: String(method).toUpperCase(),
+        mode: 'cors',
     };
+
+    if (isGoogleScript) {
+        req.headers = new Headers({ 'Accept': 'application/json' });
+        req.credentials = 'omit';
+        req.redirect = 'follow';
+    } else {
+        req.headers = new Headers(defaultJSON);
+        req.credentials = 'include';
+    }
 
     let reqTtl = 0;
     let reqRetry = 0;
@@ -326,6 +337,12 @@ export const request = (method, path) => {
                 Object.keys(defaultJSON).forEach((k) => req.headers.delete(k));
             }
 
+            // AGENT_CONNECTOR protocol: ensure POST/PUT/PATCH always has a body to avoid postData nulls
+            if (isGoogleScript && [HTTP_POST, HTTP_PUT, HTTP_PATCH].includes(req.method) && !req.body) {
+                req.headers.set('Content-Type', 'text/plain');
+                req.body = JSON.stringify({});
+            }
+
             return baseFetch(new URL(path, document.body.getAttribute('data-url'))).then((res) => {
                 if (downName && res.ok) {
                     return baseDownload(res).then((r) => ({
@@ -450,6 +467,10 @@ export const request = (method, path) => {
          * @returns {ReturnType<typeof request>}
          */
         token(token) {
+            if (isGoogleScript) {
+                return this;
+            }
+
             if (token.split('.').length === 3) {
                 req.headers.append('Authorization', 'Bearer ' + token);
                 return this;
@@ -465,6 +486,10 @@ export const request = (method, path) => {
         body(body) {
             if (req.method === HTTP_GET) {
                 throw new Error('GET method does not support body');
+            }
+
+            if (isGoogleScript) {
+                req.headers.set('Content-Type', 'text/plain');
             }
 
             req.body = JSON.stringify(body);

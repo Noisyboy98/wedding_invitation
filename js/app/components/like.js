@@ -2,7 +2,7 @@ import { dto } from '../../connection/dto.js';
 import { storage } from '../../common/storage.js';
 import { session } from '../../common/session.js';
 import { tapTapAnimation } from '../../libs/confetti.js';
-import { request, HTTP_PATCH, HTTP_POST, HTTP_STATUS_CREATED } from '../../connection/request.js';
+import { request, HTTP_PATCH, HTTP_POST, HTTP_STATUS_OK } from '../../connection/request.js';
 
 export const like = (() => {
 
@@ -25,8 +25,14 @@ export const like = (() => {
         const info = button.firstElementChild;
         const heart = button.lastElementChild;
 
-        const id = button.getAttribute('data-uuid');
+        const uuid = button.getAttribute('data-uuid');
+        const ownId = button.getAttribute('data-own');
         const count = parseInt(info.getAttribute('data-count-like'));
+
+        if (!ownId) {
+            console.error('Missing own_id for like interaction');
+            return;
+        }
 
         button.disabled = true;
 
@@ -34,40 +40,44 @@ export const like = (() => {
             navigator.vibrate(100);
         }
 
-        if (likes.has(id)) {
-            await request(HTTP_PATCH, '/api/comment/' + likes.get(id))
+        if (likes.has(uuid)) {
+            // UNLIKE atomic interaction
+            await request(HTTP_POST, `?method=UNLIKE&own_id=${ownId}`)
                 .token(session.getToken())
                 .send(dto.statusResponse)
                 .then((res) => {
                     if (res.data.status) {
-                        likes.unset(id);
+                        likes.unset(uuid);
 
                         heart.classList.remove('fa-solid', 'text-danger');
                         heart.classList.add('fa-regular');
 
-                        info.setAttribute('data-count-like', String(count - 1));
+                        const newCount = Math.max(0, count - 1);
+                        info.setAttribute('data-count-like', String(newCount));
+                        info.innerText = String(newCount);
                     }
                 })
                 .finally(() => {
-                    info.innerText = info.getAttribute('data-count-like');
                     button.disabled = false;
                 });
         } else {
-            await request(HTTP_POST, '/api/comment/' + id)
+            // LIKE atomic interaction
+            await request(HTTP_POST, `?method=LIKE&own_id=${ownId}`)
                 .token(session.getToken())
-                .send(dto.uuidResponse)
+                .send(dto.statusResponse)
                 .then((res) => {
-                    if (res.code === HTTP_STATUS_CREATED) {
-                        likes.set(id, res.data.uuid);
+                    if (res.data.status) {
+                        likes.set(uuid, true);
 
                         heart.classList.remove('fa-regular');
                         heart.classList.add('fa-solid', 'text-danger');
 
-                        info.setAttribute('data-count-like', String(count + 1));
+                        const newCount = count + 1;
+                        info.setAttribute('data-count-like', String(newCount));
+                        info.innerText = String(newCount);
                     }
                 })
                 .finally(() => {
-                    info.innerText = info.getAttribute('data-count-like');
                     button.disabled = false;
                 });
         }

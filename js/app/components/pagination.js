@@ -131,30 +131,41 @@ export const pagination = (() => {
     const setTotal = (len) => {
         totalData = Number(len);
 
-        if (totalData <= perPage && pageNow === 0) {
+        // Calculate current page number
+        const current = (pageNow / perPage) + 1;
+        const total = Math.ceil(totalData / perPage);
+        const isUnknownTotal = totalData >= 999999;
+
+        // Visibility: Hide only if we are on page 1 AND there's no more data
+        if (pageNow === 0 && !isUnknownTotal && totalData <= perPage) {
             paginate.classList.add('d-none');
             return;
         }
 
-        const current = (pageNow / perPage) + 1;
-        const total = Math.ceil(totalData / perPage);
+        // Display: If total is unknown or we have a weird total (like on last page), just show "Page X"
+        // unless total is clearly valid and >= current
+        if (isUnknownTotal || (total < current && current > 1)) {
+            page.innerText = `Page ${current}`;
+        } else {
+            page.innerText = `${current} / ${total}`;
+        }
 
-        page.innerText = `${current} / ${total}`;
-
+        // Previous Button
         if (pageNow > 0) {
             enablePrevious();
+        } else {
+            disablePrevious();
         }
 
-        if (current >= total) {
+        // Next Button: Enable if we have a "fake" total or if current < total
+        if (isUnknownTotal || current < total) {
+            enableNext();
+        } else {
             disableNext();
-            return;
         }
 
-        enableNext();
-
-        if (paginate.classList.contains('d-none')) {
-            paginate.classList.remove('d-none');
-        }
+        // Final visibility check
+        paginate.classList.remove('d-none');
     };
 
     /**
