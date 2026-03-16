@@ -30,24 +30,71 @@ export const video = (() => {
         const vid = document.createElement('video');
         vid.className = wrap.getAttribute('data-vid-class');
         vid.loop = true;
-        vid.muted = false;
+        vid.muted = true; // Start muted to satisfy mobile autoplay eligibility
         vid.controls = false;
         vid.autoplay = false;
         vid.playsInline = true;
+        vid.setAttribute('playsinline', '');
+        vid.setAttribute('webkit-playsinline', '');
         vid.preload = 'metadata';
 
-        const observer = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting ? vid.play().catch(() => {}) : vid.pause()));
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    // When visible, try to play. The priming in 'undangan.open' 
+                    // should have unlocked unmuted playback.
+                    const promise = vid.play();
+                    if (promise !== undefined) {
+                        promise.catch(() => {
+                            // Falling back to muted play if unmuted is still blocked
+                            vid.muted = true;
+                            vid.play().catch(() => {});
+                        });
+                    }
+                } else {
+                    vid.pause();
+                }
+            });
+        }, { threshold: 0.2 }); // Trigger when 20% visible for stability
+
+        let isPriming = false;
 
         vid.addEventListener('play', () => {
-            document.dispatchEvent(new Event('undangan.video.play'));
+            if (!isPriming) {
+                document.dispatchEvent(new Event('undangan.video.play'));
+            }
         });
 
         vid.addEventListener('pause', () => {
-            document.dispatchEvent(new Event('undangan.video.pause'));
+            if (!isPriming) {
+                document.dispatchEvent(new Event('undangan.video.pause'));
+            }
         });
 
         document.addEventListener('undangan.audio.play', () => {
             vid.pause();
+        });
+
+        // Prime the video on any user gesture to unlock sound for later autoplay
+        document.addEventListener('undangan.open', () => {
+            // Now that we have a user gesture, we can unmute and prime
+            isPriming = true;
+            vid.muted = false;
+            
+            // Playing and immediately pausing unblocks sound for subsequent play() calls
+            vid.play().then(() => {
+                vid.pause();
+                isPriming = false;
+            }).catch(() => {
+                // If unmuted prime fails, we keep it muted for safety but still unlocked
+                vid.muted = true;
+                vid.play().then(() => {
+                    vid.pause();
+                    isPriming = false;
+                }).catch(() => {
+                    isPriming = false;
+                });
+            });
         });
 
         /**
@@ -55,13 +102,19 @@ export const video = (() => {
          * @returns {void}
          */
         const prepareVideo = (b) => {
-            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isSafari = isIOS || (/Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent));
+            
             vid.preload = 'auto';
             vid.controls = true;
             vid.disableRemotePlayback = true;
             vid.disablePictureInPicture = true;
             vid.controlsList = 'noremoteplayback nodownload noplaybackrate';
-            vid.src = isSafari ? util.escapeHtml(src) : URL.createObjectURL(b);
+            
+            // Use absolute URL for Safari/iOS to avoid NotSupportedError
+            const finalSrc = isSafari ? new URL(src, window.location.href).href : URL.createObjectURL(b);
+            vid.src = finalSrc;
+            vid.load();
         };
 
         /**

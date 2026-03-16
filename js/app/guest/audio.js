@@ -26,14 +26,21 @@ export const audio = (() => {
 
         try {
             const audioSrc = await cache('audio').withForceCache().get(url, progress.getAbort());
-            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
             
-            // Bypass Blob URL on Safari/iOS to avoid NotSupportedError
-            audioEl = new Audio(isSafari ? url : audioSrc);
+            // Comprehensive detection for Safari and all iOS browsers (Chrome/Firefox on iOS use WebKit)
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isSafari = isIOS || (/Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent));
+            
+            audioEl = document.createElement('audio');
             audioEl.loop = true;
             audioEl.muted = false;
             audioEl.autoplay = false;
             audioEl.controls = false;
+            
+            // Use absolute URL for Safari/iOS to avoid NotSupportedError
+            const finalSrc = isSafari ? new URL(url, window.location.href).href : audioSrc;
+            audioEl.src = finalSrc;
+            audioEl.load();
 
             progress.complete('audio');
         } catch {
