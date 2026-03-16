@@ -146,9 +146,16 @@ export const request = (method, path) => {
     
     // Detection is now done dynamically to handle late-binding data-url
     const getTargetUrl = () => {
-        const urlStr = document.body?.getAttribute('data-url') || '';
+        const urlStr = (document.body?.getAttribute('data-url') || '').trim();
+        
+        // Ensure path is relative for Google Scripts to avoid replacing the /macros/s/... part
+        let relativePath = path;
+        if (urlStr.includes('script.google.com') && path.startsWith('/')) {
+            relativePath = path.substring(1);
+        }
+
         try {
-            return new URL(path, urlStr);
+            return new URL(relativePath, urlStr);
         } catch (e) {
             return new URL(path, window.location.origin);
         }
