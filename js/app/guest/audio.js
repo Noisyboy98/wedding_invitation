@@ -54,8 +54,10 @@ export const audio = (() => {
                 isPlay = true;
                 music.disabled = false;
                 music.innerHTML = statePlay;
+                document.dispatchEvent(new Event('undangan.audio.play'));
             } catch (err) {
                 isPlay = false;
+                music.disabled = false;
                 util.notify(err).error();
             }
         };
@@ -67,6 +69,7 @@ export const audio = (() => {
             isPlay = false;
             audioEl.pause();
             music.innerHTML = statePause;
+            document.dispatchEvent(new Event('undangan.audio.pause'));
         };
 
         document.addEventListener('undangan.open', () => {
@@ -74,6 +77,22 @@ export const audio = (() => {
 
             if (playOnOpen) {
                 play();
+            }
+        });
+
+        let wasPlaying = false;
+
+        document.addEventListener('undangan.video.play', () => {
+            if (isPlay) {
+                wasPlaying = true;
+                pause();
+            }
+        });
+
+        document.addEventListener('undangan.video.pause', () => {
+            if (wasPlaying) {
+                play();
+                wasPlaying = false;
             }
         });
 

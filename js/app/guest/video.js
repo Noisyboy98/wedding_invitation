@@ -30,13 +30,25 @@ export const video = (() => {
         const vid = document.createElement('video');
         vid.className = wrap.getAttribute('data-vid-class');
         vid.loop = true;
-        vid.muted = true;
+        vid.muted = false;
         vid.controls = false;
         vid.autoplay = false;
         vid.playsInline = true;
         vid.preload = 'metadata';
 
-        const observer = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting ? vid.play() : vid.pause()));
+        const observer = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting ? vid.play().catch(() => {}) : vid.pause()));
+
+        vid.addEventListener('play', () => {
+            document.dispatchEvent(new Event('undangan.video.play'));
+        });
+
+        vid.addEventListener('pause', () => {
+            document.dispatchEvent(new Event('undangan.video.pause'));
+        });
+
+        document.addEventListener('undangan.audio.play', () => {
+            vid.pause();
+        });
 
         /**
          * @param {Blob} b

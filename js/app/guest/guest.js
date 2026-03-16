@@ -288,10 +288,37 @@ export const guest = (() => {
     };
 
     /**
+     * @returns {void}
+     */
+    const initCarousels = () => {
+        ['carousel-image-one', 'carousel-image-two', 'carousel-image-three', 'carousel-image-four'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (!el) {
+                return;
+            }
+
+            const c = bs.carousel(id);
+            const slide = () => {
+                util.timeOut(() => {
+                    if (Math.random() > 0.5) {
+                        c.next();
+                    } else {
+                        c.prev();
+                    }
+                    slide();
+                }, Math.floor(Math.random() * (5000 - 3000 + 1)) + 3000);
+            };
+
+            slide();
+        });
+    };
+
+    /**
      * @returns {Promise<void>}
      */
     const booting = async () => {
         animateSvg();
+        initCarousels();
         countDownDate();
         showGuestName();
         modalImageClick();
