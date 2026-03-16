@@ -143,8 +143,19 @@ export const cacheWrapper = (cacheName) => {
 export const request = (method, path) => {
 
     const ac = new AbortController();
-    const dataUrl = document.body?.getAttribute('data-url') || '';
-    const isGoogleScript = path.includes('script.google.com') || dataUrl.includes('script.google.com');
+    
+    // Detection is now done dynamically to handle late-binding data-url
+    const getTargetUrl = () => {
+        const urlStr = document.body?.getAttribute('data-url') || '';
+        try {
+            return new URL(path, urlStr);
+        } catch (e) {
+            return new URL(path, window.location.origin);
+        }
+    };
+
+    const target = getTargetUrl();
+    const isGoogleScript = target.toString().includes('script.google.com');
 
     const req = {
         signal: ac.signal,
@@ -153,12 +164,12 @@ export const request = (method, path) => {
     };
 
     if (isGoogleScript) {
-        req.headers = new Headers({ 'Accept': 'application/json' });
+        req.headers = new Headers(); // GAS prefers no headers to remain a "simple request"
         req.credentials = 'omit';
         req.redirect = 'follow';
     } else {
         req.headers = new Headers(defaultJSON);
-        req.credentials = 'include';
+        req.credentials = (target.origin === window.location.origin) ? 'include' : 'omit';
     }
 
     let reqTtl = 0;
@@ -339,11 +350,13 @@ export const request = (method, path) => {
 
             // AGENT_CONNECTOR protocol: ensure POST/PUT/PATCH always has a body to avoid postData nulls
             if (isGoogleScript && [HTTP_POST, HTTP_PUT, HTTP_PATCH].includes(req.method) && !req.body) {
+                // We DON'T set Content-Type: application/json here to avoid preflight
+                // We keep it as "simple" text/plain which GAS accepts.
                 req.headers.set('Content-Type', 'text/plain');
                 req.body = JSON.stringify({});
             }
 
-            return baseFetch(new URL(path, document.body.getAttribute('data-url'))).then((res) => {
+            return baseFetch(target).then((res) => {
                 if (downName && res.ok) {
                     return baseDownload(res).then((r) => ({
                         code: r.status,
