@@ -55,12 +55,13 @@ export const video = (() => {
          * @returns {void}
          */
         const prepareVideo = (b) => {
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
             vid.preload = 'auto';
             vid.controls = true;
             vid.disableRemotePlayback = true;
             vid.disablePictureInPicture = true;
             vid.controlsList = 'noremoteplayback nodownload noplaybackrate';
-            vid.src = URL.createObjectURL(b);
+            vid.src = isSafari ? util.escapeHtml(src) : URL.createObjectURL(b);
         };
 
         /**

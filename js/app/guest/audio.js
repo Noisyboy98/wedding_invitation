@@ -25,7 +25,11 @@ export const audio = (() => {
         let audioEl = null;
 
         try {
-            audioEl = new Audio(await cache('audio').withForceCache().get(url, progress.getAbort()));
+            const audioSrc = await cache('audio').withForceCache().get(url, progress.getAbort());
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            
+            // Bypass Blob URL on Safari/iOS to avoid NotSupportedError
+            audioEl = new Audio(isSafari ? url : audioSrc);
             audioEl.loop = true;
             audioEl.muted = false;
             audioEl.autoplay = false;
