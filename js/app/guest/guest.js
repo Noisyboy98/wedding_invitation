@@ -173,31 +173,76 @@ export const guest = (() => {
     };
 
     /**
+     * @param {string} src
+     * @returns {void}
+     */
+    const updateModalLinks = (src) => {
+        const clickBtn = document.getElementById('button-modal-click');
+        const downloadBtn = document.getElementById('button-modal-download');
+        if (clickBtn) clickBtn.setAttribute('href', src);
+        if (downloadBtn) downloadBtn.setAttribute('data-src', src);
+    };
+
+    /**
      * @param {HTMLImageElement} img
      * @returns {void}
      */
     const modal = (img) => {
-        document.getElementById('button-modal-click').setAttribute('href', img.src);
-        document.getElementById('button-modal-download').setAttribute('data-src', img.src);
+        if (!img) return;
 
-        const i = document.getElementById('show-modal-image');
-        i.src = img.src;
-        i.width = img.width;
-        i.height = img.height;
+        const carouselEl = img.closest('.carousel');
+        const modalCarouselInner = document.getElementById('modal-carousel-inner');
+        if (!modalCarouselInner) return;
+
+        const modalCarouselId = 'carousel-modal-image';
+        const carouselInstance = bs.carousel(modalCarouselId);
+
+        if (!carouselEl) {
+            modalCarouselInner.innerHTML = `
+                <div class="carousel-item active">
+                    <img src="${img.src}" class="d-block w-100 rounded-4" style="object-fit: contain;" alt="image">
+                </div>
+            `;
+            updateModalLinks(img.src);
+        } else {
+            const allImgs = Array.from(carouselEl.querySelectorAll('.carousel-inner img'));
+            modalCarouselInner.innerHTML = '';
+
+            let activeIndex = 0;
+            allImgs.forEach((carouselImg, index) => {
+                const isActive = carouselImg === img || (carouselImg.src === img.src && carouselImg.getAttribute('data-src') === img.getAttribute('data-src'));
+                if (isActive) activeIndex = index;
+
+                const div = document.createElement('div');
+                div.className = `carousel-item${isActive ? ' active' : ''}`;
+
+                const i = document.createElement('img');
+                i.src = carouselImg.src;
+                i.className = 'd-block w-100 rounded-4';
+                i.style.objectFit = 'contain';
+                i.alt = 'Gallery Image';
+
+                div.appendChild(i);
+                modalCarouselInner.appendChild(div);
+            });
+
+            updateModalLinks(img.src);
+            // Move to the correct slide if not already there
+            carouselInstance.to(activeIndex);
+        }
+
         bs.modal('modal-image').show();
-    };
 
-    /**
-     * @returns {void}
-     */
-    const modalImageClick = () => {
-        document.getElementById('show-modal-image').addEventListener('click', (e) => {
-            const abs = e.currentTarget.parentNode.querySelector('.position-absolute');
+        const modalCarousel = document.getElementById(modalCarouselId);
+        const handleSlid = (e) => {
+            const activeImg = e.relatedTarget.querySelector('img');
+            if (activeImg) {
+                updateModalLinks(activeImg.src);
+            }
+        };
 
-            abs.classList.contains('d-none')
-                ? abs.classList.replace('d-none', 'd-flex')
-                : abs.classList.replace('d-flex', 'd-none');
-        });
+        modalCarousel.removeEventListener('slid.bs.carousel', handleSlid);
+        modalCarousel.addEventListener('slid.bs.carousel', handleSlid);
     };
 
     /**
@@ -317,8 +362,9 @@ export const guest = (() => {
         initCarousels();
         countDownDate();
         showGuestName();
-        modalImageClick();
+
         normalizeArabicFont();
+
         buildGoogleCalendar();
 
         if (information.has('presence')) {

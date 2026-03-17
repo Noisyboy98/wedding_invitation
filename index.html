@@ -97,7 +97,7 @@
 <!-- <html lang="id" data-bs-theme="auto"> ['auto', 'dark', 'light'] -->
 
 <body data-key="1"
-    data-url="https://script.google.com/macros/s/AKfycbxvSVVY2MRmUS567slFwtYEx9qAMUHNGR4sWVeDnHMpRmIPZ5OciM8ZL0FEa0-fKpSKGw/exec"
+    data-url="https://script.google.com/macros/s/AKfycbzoZ9t4txrgFPZdXT1QZHJ8Su2qfdaD_0aQ_naBt7GFtsvYKT3zKq6_qotpxCuQLmuGZQ/exec"
     data-audio="./assets/music/pure-love-304010.mp3" data-confetti="true" data-time="2023-12-24 09:30:00">
 
     <!-- Root Invitation -->
@@ -1163,10 +1163,10 @@
 
     <!-- Modal Image -->
     <div class="modal fade" id="modal-image" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border border-0">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border border-0 bg-transparent">
                 <div class="modal-body p-0">
-                    <div class="d-flex position-absolute top-0 end-0">
+                    <div class="d-flex position-absolute top-0 end-0" style="z-index: 1060;">
                         <a class="btn d-flex justify-content-center align-items-center bg-overlay-auto p-2 m-1 rounded-circle border shadow-sm z-1"
                             role="button" target="_blank" href="./assets/images/placeholder.webp"
                             id="button-modal-click">
@@ -1184,8 +1184,21 @@
                         </button>
                     </div>
 
-                    <img src="./assets/images/placeholder.webp" class="img-fluid w-100 rounded-4 cursor-pointer"
-                        alt="image" id="show-modal-image">
+                    <div id="carousel-modal-image" class="carousel slide" data-bs-touch="true">
+                        <div class="carousel-inner" id="modal-carousel-inner">
+                            <!-- Injected by JavaScript -->
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#carousel-modal-image"
+                            data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#carousel-modal-image"
+                            data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
