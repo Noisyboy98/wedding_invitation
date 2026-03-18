@@ -12,7 +12,6 @@ export const audio = (() => {
      * @returns {Promise<void>}
      */
     const load = async (playOnOpen = true) => {
-
         const url = document.body.getAttribute('data-audio');
         if (!url) {
             progress.complete('audio', true);
@@ -20,33 +19,32 @@ export const audio = (() => {
         }
 
         /**
-         * @type {HTMLAudioElement|null}
+         * @type {HTMLAudioElement}
          */
-        let audioEl = null;
+        const audioEl = document.createElement('audio');
+        audioEl.loop = true;
+        audioEl.muted = false;
+        audioEl.autoplay = false;
+        audioEl.controls = false;
 
-        try {
-            const audioSrc = await cache('audio').withForceCache().get(url, progress.getAbort());
-            
-            // Comprehensive detection for Safari and all iOS browsers (Chrome/Firefox on iOS use WebKit)
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            const isSafari = isIOS || (/Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent));
-            
-            audioEl = document.createElement('audio');
-            audioEl.loop = true;
-            audioEl.muted = false;
-            audioEl.autoplay = false;
-            audioEl.controls = false;
-            
-            // Use absolute URL for Safari/iOS to avoid NotSupportedError
-            const finalSrc = isSafari ? new URL(url, window.location.href).href : audioSrc;
-            audioEl.src = finalSrc;
-            audioEl.load();
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isSafari = isIOS || (/Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent));
+        
+        audioEl.src = isSafari ? new URL(url, window.location.href).href : url;
+        audioEl.load();
 
+        cache('audio').withForceCache().get(url, progress.getAbort()).then((audioSrc) => {
+            if (!isSafari) {
+                const currentTime = audioEl.currentTime;
+                const wasPlaying = !audioEl.paused;
+                audioEl.src = audioSrc;
+                audioEl.currentTime = currentTime;
+                if (wasPlaying) audioEl.play().catch(() => {});
+            }
             progress.complete('audio');
-        } catch {
-            progress.invalid('audio');
-            return;
-        }
+        }).catch(() => {
+            progress.complete('audio', true);
+        });
 
         let isPlay = false;
         const music = document.getElementById('button-music');
